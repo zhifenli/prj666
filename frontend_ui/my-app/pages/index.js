@@ -4,7 +4,8 @@ const HomePage = () => {
   const [sensorData, setSensorData] = useState([]);
   const [error, setError] = useState(null);
 
-  const fetchSensorData = async () => {
+  // Fetch sensor data already stored in the .csv file
+  const fetchInitialSensorData = async () => {
     try {
       const res = await fetch('http://localhost:8080/sensor-data');
       if (!res.ok) {
@@ -18,14 +19,22 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    // initial fetch
-    fetchSensorData();
+    // Fetch the initial data when the component mounts
+    fetchInitialSensorData();
 
-    // Set up polling every 10 seconds
-    const intervalId = setInterval(fetchSensorData, 10000);
+    // Open WebSocket connection for real-time updates
+    const ws = new WebSocket('ws://localhost:8080');
 
-    // Clear the interval on component unmount
-    return () => clearInterval(intervalId);
+    ws.onmessage = (event) => {
+      const newSensorData = JSON.parse(event.data);
+      console.log('Received data:', newSensorData);
+      setSensorData((prevData) => [...prevData, newSensorData]);
+    };
+
+    // Cleanup WebSocket on component unmount
+    return () => {
+      ws.close();
+    };
   }, []);
 
   return (
@@ -33,18 +42,11 @@ const HomePage = () => {
       <h1>Sensor Data</h1>
       {error && <p>Error: {error}</p>}
       <ul>
-        {sensorData.length > 0 ? (
-          sensorData.map((data, index) => (
-            <li key={index}>
-              <strong>Timestamp:</strong> {data.Timestamp}
-              <strong>&nbsp;&nbsp;&nbsp;Temperature:</strong> {data.Temperature} °C
-              <strong>&nbsp;&nbsp;&nbsp;Humidity:</strong> {data.Humidity} %
-              <strong>&nbsp;&nbsp;&nbsp;moisture:</strong> {data.Moisture} %
-            </li>
-          ))
-        ) : (
-          <p>No sensor data available.</p>
-        )}
+        {sensorData.map((data, index) => (
+          <li key={index}>
+            Temperature: {data.temperature}, Humidity: {data.humidity}, Moisture: {data.moisture}
+          </li>
+        ))}
       </ul>
     </div>
   );
