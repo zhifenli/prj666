@@ -1,6 +1,20 @@
+const { WebSocketServer } = require("ws");
 const path = require('path');
 const csvWriter = require('csv-writer');
 
+// Create WebSocket Server
+const wss = new WebSocketServer({ noServer: true });
+let clients = [];
+
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+  clients.push(ws);
+
+  ws.on("close", () => {
+    clients = clients.filter(client => client !== ws);
+    console.log("Client disconnected");
+  });
+});
 
 // Define the file path
 const filePath = path.join(__dirname, '../data/sensor_data.csv');
@@ -19,7 +33,8 @@ const csvWriterInstance = csvWriter.createObjectCsvWriter({
  
 
 /**
- * Accept sensor data and store it in a .CSV file
+ * Accept sensor data, store it in a .CSV file and broadcasts it 
+ * to the connected websocket clients
  */
 module.exports = (req, res) => {
   const { temperature, humidity, moisture } = req.body;
@@ -36,6 +51,15 @@ module.exports = (req, res) => {
   };
 
   csvWriterInstance.writeRecords([data])
-    .then(() => res.status(200).json({ message: 'Sensor data recorded' }))
-    .catch((err) => res.status(500).json({ message: 'Failed to write data', error: err }));
+    .then(() => {
+      // Broadcast to all connected WebSocket clients
+      clients.forEach(client => {
+        if (client.readyState === client.OPEN) {
+          client.send(JSON.stringify(data));
+        }
+      });
+
+      res.status(200).json({ message: 'Sensor data recorded and broadcasted' });
+    })
+    .catch(err => res.status(500).json({ message: 'Failed to write data', error: err }));
 };
