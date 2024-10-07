@@ -9,10 +9,12 @@
   "author": "Team 5",
   "license": "No License",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
     "csv-writer": "^1.6.0",
     "express": "^4.21.0",
+    "mongodb": "^6.9.0",
     "stoppable": "^1.1.0",
     "ws": "^8.18.0"
   }
