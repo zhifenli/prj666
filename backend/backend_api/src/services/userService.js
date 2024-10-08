@@ -21,13 +21,15 @@ const connect = async () => {
 
 async function userCreate(email, password) {
   const hash = await bcrypt.hash(password, 10);
-  return await client
+  await client
     .db("datasense")
     .collection("users")
     .insertOne({ email: email, password: hash });
+
+  return await findByEmailPassword(email, password);
 }
 
-async function userCheck(email, plainPassword) {
+async function findByEmailPassword(email, plainPassword) {
   const user = await client
     .db("datasense")
     .collection("users")
@@ -45,7 +47,7 @@ async function userCheck(email, plainPassword) {
 module.exports = {
   connect,
   userCreate,
-  userCheck,
+  findByEmailPassword,
 };
 
 // connect mongodb
